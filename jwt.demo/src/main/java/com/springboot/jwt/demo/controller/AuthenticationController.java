@@ -1,17 +1,16 @@
 package com.springboot.jwt.demo.controller;
 
-import java.io.IOException;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.stream.Collectors;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -19,9 +18,9 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.auth0.jwt.interfaces.JWTVerifier;
-import com.fasterxml.jackson.core.JsonGenerationException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.springboot.jwt.demo.dto.request.AuthenticationAccessTokenRequest;
+import com.springboot.jwt.demo.dto.request.AuthenticationRefreshTokenRequest;
+import com.springboot.jwt.demo.dto.response.AuthenticationResponse;
 import com.springboot.jwt.demo.entity.RoleEntity;
 import com.springboot.jwt.demo.entity.UserEntity;
 import com.springboot.jwt.demo.service.UserService;
@@ -35,51 +34,69 @@ public class AuthenticationController {
 	@Autowired
 	UserService userService;
 
+	@Autowired
+	AuthenticationManager authenticationManager;
+
+	@Autowired
+	private UserDetailsService userDetailsService;
+
 	private String secret = "8p2qLo97kPGBwmMS";
 
-	@PostMapping("/refresh-token")
-	public void refreshToken(HttpServletRequest request, HttpServletResponse response) throws JsonGenerationException, JsonMappingException, IOException {
-		String authorizationHeader = request.getHeader("Authorization");
-		if (authorizationHeader != null && authorizationHeader.startsWith("Refresh_Bearer ")) {
-			try {
-				String refreshToken = authorizationHeader.substring("Refresh_Bearer ".length());
+	@PostMapping({ "/refresh-token", "/login" })
+	public AuthenticationResponse refreshToken(@RequestBody AuthenticationRefreshTokenRequest request)
+			throws Exception {
+		try {
+			authenticationManager.authenticate(
+					new UsernamePasswordAuthenticationToken(request.getUserName(), request.getPassword()));
+		} catch (Exception e) {
+			log.error("Incorrect username or password: {}", e.getMessage());
+			return new AuthenticationResponse(request.getUserName(), null, null, e.getLocalizedMessage());
+		}
 
+		User user = (User) userDetailsService.loadUserByUsername(request.getUserName());
+
+		Algorithm algorithm = Algorithm.HMAC256(secret.getBytes());
+		String accessToken = JWT.create().withSubject(user.getUsername())
+				.withExpiresAt(new Date(System.currentTimeMillis() + 10 * 60 * 1000))
+				.withClaim("roles",
+						user.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toList()))
+				.sign(algorithm);
+
+		String refreshToken = JWT.create().withSubject(user.getUsername())
+				.withExpiresAt(new Date(System.currentTimeMillis() + 60 * 60 * 1000)).sign(algorithm);
+
+		return new AuthenticationResponse(request.getUserName(), accessToken, refreshToken,
+				"Access token and refresh token generated successfully.");
+	}
+
+	@PostMapping({ "/access-token" })
+	public AuthenticationResponse accessToken(@RequestBody AuthenticationAccessTokenRequest request) throws Exception {
+		/*currently there is no user name password validation in the code.*/
+		if (request.getRefreshToken() != null) {
+			try {
 				Algorithm algorithm = Algorithm.HMAC256(secret.getBytes());
 				JWTVerifier verifier = JWT.require(algorithm).build();
 				/* Verify token */
-				DecodedJWT decodedJWT = verifier.verify(refreshToken);
+				DecodedJWT decodedJWT = verifier.verify(request.getRefreshToken());
 				String username = decodedJWT.getSubject();
 				/* Fetch user */
 				UserEntity user = userService.gatUser(username);
 				/* Generate access token */
 				String accessToken = JWT.create().withSubject(user.getUserName())
 						.withExpiresAt(new Date(System.currentTimeMillis() + 10 * 60 * 1000))
-						.withIssuer(request.getRequestURL().toString())
 						.withClaim("roles",
 								user.getRoles().stream().map(RoleEntity::getName).collect(Collectors.toList()))
 						.sign(algorithm);
-				
-				Map<String, String> token = new HashMap<>();
-				token.put("access_token", accessToken);
-				token.put("refresh_token", refreshToken);
 
-				response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-				new ObjectMapper().writeValue(response.getOutputStream(), token);
-
-			} catch (Exception exception) {
-				log.error("Error in Refresh token: {}", exception.getMessage());
-
-				response.setHeader("error", exception.getMessage());
-
-				/* Sending token in the body */
-				Map<String, String> error = new HashMap<>();
-				error.put("error_message", exception.getMessage());
-
-				response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-				new ObjectMapper().writeValue(response.getOutputStream(), error);
+				return new AuthenticationResponse(request.getUserName(), accessToken, request.getRefreshToken(),
+						"Access token generated successfully.");
+			} catch (Exception e) {
+				log.error("Error in Access token: {}", e.getMessage());
+				return new AuthenticationResponse(request.getUserName(), null, null, e.getLocalizedMessage());
 			}
 		} else {
-			throw new RuntimeException("Refresh token is missing");
+			log.error("Refresh token is missing.");
+			return new AuthenticationResponse(request.getUserName(), null, null, "Refresh token is missing.");
 		}
 	}
 

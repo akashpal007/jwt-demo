@@ -29,22 +29,16 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
 	@Override
 	protected void configure(HttpSecurity http) throws Exception {
-		CustomAuthenticationFilter customAuthenticationFilter = new CustomAuthenticationFilter(
-				authenticationManagerBean());
-		/* Changing default spring security login API path */
-		customAuthenticationFilter.setFilterProcessesUrl("/api/auth/login");
 
 		http.csrf().disable();
 		http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
-		/* permit all the request with "/api/login" */
-		http.authorizeRequests().antMatchers("/api/auth/login/**").permitAll();
-		http.authorizeRequests().antMatchers("/api/auth/refresh-token/**").permitAll();
+		/* permit all the request with "/api/auth" */
+		http.authorizeRequests().antMatchers("/api/auth/**").permitAll();
 		/* Role based authorization */
 		http.authorizeRequests().antMatchers(HttpMethod.GET, "/api/user/**").hasAnyAuthority("ROLE_USER");
 		http.authorizeRequests().antMatchers(HttpMethod.POST, "/api/user/**").hasAnyAuthority("ROLE_ADMIN");
 		/* authorize any request */
 		http.authorizeRequests().anyRequest().authenticated();
-		http.addFilter(customAuthenticationFilter);
 
 		http.addFilterBefore(new CustomAuthorizationFilter(), UsernamePasswordAuthenticationFilter.class);
 	}
