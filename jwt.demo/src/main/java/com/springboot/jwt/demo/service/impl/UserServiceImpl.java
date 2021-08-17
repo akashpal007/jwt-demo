@@ -14,6 +14,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.springboot.jwt.demo.common.Roles;
 import com.springboot.jwt.demo.entity.RoleEntity;
 import com.springboot.jwt.demo.entity.UserEntity;
 import com.springboot.jwt.demo.repository.RoleRepository;
@@ -46,7 +47,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 			/* Setting spring defined authority from user define authority */
 			List<SimpleGrantedAuthority> authorities = new ArrayList<>();
 			userResponse.getRoles().forEach(role -> {
-				authorities.add(new SimpleGrantedAuthority(role.getName()));
+				authorities.add(new SimpleGrantedAuthority(role.getName().toString()));
 			});
 
 			return new User(userResponse.getUserName(), userResponse.getPassword(), authorities);
@@ -64,7 +65,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 	}
 
 	@Override
-	public void addRoleToUser(String userName, String roleName) {
+	public void addRoleToUser(String userName, Roles roleName) {
 		UserEntity userResponse = userRepo.findByUserName(userName).orElse(null);
 		RoleEntity roleResponse = roleRepo.findByName(roleName).orElse(null);
 

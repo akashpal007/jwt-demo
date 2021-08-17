@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.springboot.jwt.demo.common.Roles;
 import com.springboot.jwt.demo.entity.UserEntity;
 import com.springboot.jwt.demo.service.UserService;
 
@@ -28,7 +29,7 @@ public class UserController {
 	}
 
 	@PostMapping("/add-role")
-	public ResponseEntity<Object> addRoleToUser(@RequestParam String userName, @RequestParam String roleName) {
+	public ResponseEntity<Object> addRoleToUser(@RequestParam String userName, @RequestParam Roles roleName) {
 		userService.addRoleToUser(userName, roleName);
 		return ResponseEntity.ok().build();
 	}

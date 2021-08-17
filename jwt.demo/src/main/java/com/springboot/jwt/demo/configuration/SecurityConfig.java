@@ -14,6 +14,8 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import com.springboot.jwt.demo.common.Roles;
+
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
@@ -35,8 +37,10 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		/* permit all the request with "/api/auth" */
 		http.authorizeRequests().antMatchers("/api/auth/**").permitAll();
 		/* Role based authorization */
-		http.authorizeRequests().antMatchers(HttpMethod.GET, "/api/user/**").hasAnyAuthority("ROLE_USER");
-		http.authorizeRequests().antMatchers(HttpMethod.POST, "/api/user/**").hasAnyAuthority("ROLE_ADMIN");
+		http.authorizeRequests().antMatchers(HttpMethod.GET, "/api/user/**")
+				.hasAnyAuthority(Roles.ROLE_USER.toString());
+		http.authorizeRequests().antMatchers(HttpMethod.POST, "/api/user/**")
+				.hasAnyAuthority(Roles.ROLE_ADMIN.toString());
 		/* authorize any request */
 		http.authorizeRequests().anyRequest().authenticated();
 

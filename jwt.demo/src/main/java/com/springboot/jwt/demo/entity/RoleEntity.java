@@ -1,10 +1,14 @@
 package com.springboot.jwt.demo.entity;
 
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
+
+import com.springboot.jwt.demo.common.Roles;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -22,5 +26,6 @@ public class RoleEntity {
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
 	Long id;
-	String name;
+	@Enumerated(EnumType.STRING)
+	Roles name;
 }

@@ -4,6 +4,7 @@ import java.util.Date;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
@@ -40,7 +41,8 @@ public class AuthenticationController {
 	@Autowired
 	private UserDetailsService userDetailsService;
 
-	private String secret = "8p2qLo97kPGBwmMS";
+	@Value("${jwt.secret}")
+	private String secret;
 
 	@PostMapping({ "/refresh-token", "/login" })
 	public AuthenticationResponse refreshToken(@RequestBody AuthenticationRefreshTokenRequest request)

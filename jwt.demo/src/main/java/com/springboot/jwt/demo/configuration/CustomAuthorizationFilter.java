@@ -7,11 +7,13 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.annotation.PostConstruct;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -28,9 +30,10 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class CustomAuthorizationFilter extends OncePerRequestFilter {
-
+	@Value("${jwt.secret}")
 	private String secret = "8p2qLo97kPGBwmMS";
 
+	@PostConstruct
 	@Override
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
 			throws ServletException, IOException {
